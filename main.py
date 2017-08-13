@@ -12,51 +12,58 @@ def user_select_option(message, options):
     return option_lst[index]
 
 
-def create_n_tasks_under_a_task(workspace, project, parent_task_id, num_sub_tasks, prefix):
-    i = 1
-    while i < num_sub_tasks + 1:
-        print("task " + str(i))
-        client.tasks.create_in_workspace(workspace['id'],
-                                         {'name': prefix + str(i),
-                                          'projects': [project['id']],
-                                          'parent': parent_task_id
-                                          }
-                                         )
-        i = i + 1
-
-
 class AsanaAutomator:
     def __init__(self, client):
         self.client = client
+    def move_tasks_from_today_to_later(self, workspace, project):
+        mytasks = self.client.tasks.find_all()
+    def create_n_tasks_under_a_task(self, workspace, project, parent_task_id, num_sub_tasks, prefix):
+        i = 1
+        while i < num_sub_tasks + 1:
+            print("task " + str(i))
+            self.client.tasks.create_in_workspace(workspace['id'],
+                                                  {'name': prefix + str(i),
+                                                   'projects': [project['id']],
+                                                   'parent': parent_task_id
+                                                   }
+                                                  )
+            i = i + 1
+
+    def prompt_parent_nsubtask_prefix(self):
+        parent_task_id = input("Enter parent task id:")
+        num_sub_tasks = int(input("Enter number of tasks:") or 0)
+        prefix = input("Enter the prefix for subtask:")
+
+        return parent_task_id, num_sub_tasks, prefix
+
+    def create_n_tasks_under_all_subtask(self, workspace, project):
+        parent_task_id, num_sub_tasks, prefix = self.prompt_parent_nsubtask_prefix()
+        all_subtask = self.client.tasks.subtasks(parent_task_id)
+        print(all_subtask)
+        i = 0
+        for subtask in all_subtask:
+            i = i + 1
+            print("subtask processed: " + str(i))
+            if i < 253:
+                continue
+            print(subtask)
+            self.create_n_tasks_under_a_task(workspace, project, subtask['id'], num_sub_tasks, prefix)
 
 
-def prompt_parent_nsubtask_prefix():
-    parent_task_id = input("Enter parent task id:")
-    num_sub_tasks = int(input("Enter number of tasks:") or 0)
-    prefix = input("Enter the prefix for subtask:")
+    def add_project_to_subtask(self, workspace, project):
+        task_id = input("Enter parent task id:")
+        all_subtask = self.client.tasks.subtasks(task_id)
 
-    return parent_task_id, num_sub_tasks, prefix
+        for subtask in all_subtask:
+            print(subtask['id'])
+            self.client.tasks.add_project(subtask['id'], {
+                'project': project['id']
+            })
 
+    def create_n_tasks_under_a_task_(self, workspace, project):
+        parent_task_id, num_sub_tasks, prefix = self.prompt_parent_nsubtask_prefix()
 
-def create_n_tasks_under_all_subtask(client, workspace, project):
-    parent_task_id, num_sub_tasks, prefix = prompt_parent_nsubtask_prefix()
-    all_subtasks = client.tasks.find_all({'task': parent_task_id})
-    print(all_subtasks.items)
-    i = 0
-    for subtask in all_subtasks.items:
-        create_n_tasks_under_a_task(workspace, project, subtask['id'], num_sub_tasks, prefix)
-        print("subtask processed: " + str(i))
-        i = i + 1
-
-
-def add_project_to_subtask(client, workspace, task_id):
-    all_subtasks = client.tasks.find_all({'task': task_id})
-
-
-def create_n_tasks_under_a_task_(client, workspace, project):
-    parent_task_id, num_sub_tasks, prefix = prompt_parent_nsubtask_prefix()
-
-    create_n_tasks_under_a_task(client, workspace, project, parent_task_id, num_sub_tasks, prefix)
+        self.create_n_tasks_under_a_task(workspace, project, parent_task_id, num_sub_tasks, prefix)
 
 
 def get_access_key():
@@ -69,6 +76,7 @@ def get_access_key():
 def main():
     access_key = get_access_key()
     client = asana.Client.access_token(access_key)
+    asanaAutomator = AsanaAutomator(client)
     workspaces = client.workspaces.find_all()
 
     workspace = user_select_option("Please choose a workspace", workspaces)
@@ -78,14 +86,17 @@ def main():
     print("What you want to do next?")
     print("1. You want to create set of tasks under a task")
     print("2. You want to create set of tasks under all subtasks")
+    print("3. Add all subtasks of task to a project")
 
     option = input("Enter the input:")
 
     if option is "1":
-        create_n_tasks_under_a_task_(workspace, project)
+        asanaAutomator.create_n_tasks_under_a_task_(workspace, project)
     elif option is "2":
-        create_n_tasks_under_all_subtask(workspace, project)
+        asanaAutomator.create_n_tasks_under_all_subtask(workspace, project)
+    elif option is "3":
+        asanaAutomator.add_project_to_subtask(workspace, project)
 
 
 if __name__ == '__main__':
-# main()
+    main()
