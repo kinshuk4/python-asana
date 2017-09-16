@@ -50,6 +50,7 @@ class AsanaAutomator:
             self.create_n_tasks_under_a_task(workspace, project, subtask['id'], num_sub_tasks, prefix)
 
 
+
     def add_project_to_subtask(self, workspace, project):
         task_id = input("Enter parent task id:")
         all_subtask = self.client.tasks.subtasks(task_id)
@@ -60,10 +61,26 @@ class AsanaAutomator:
                 'project': project['id']
             })
 
+    def update_date_to_all_subtask(self, workspace, project):
+        task_id = input("Enter parent task id:")
+        all_subtask = self.client.tasks.subtasks(task_id)
+        date_text = input("Enter the date(0 for removing it i.e. setting to null): ")
+        if date_text is '0':
+            date = None
+        else:
+            date = get_date_in_is8601_from_text(date_text)
+
+        for subtask in all_subtask:
+            print(subtask['id'])
+            self.client.tasks.update(subtask['id'], {
+                'due_at': date
+            })
+
     def create_n_tasks_under_a_task_(self, workspace, project):
         parent_task_id, num_sub_tasks, prefix = self.prompt_parent_nsubtask_prefix()
 
         self.create_n_tasks_under_a_task(workspace, project, parent_task_id, num_sub_tasks, prefix)
+
 
 
 def get_access_key():
@@ -72,6 +89,10 @@ def get_access_key():
     access_key = config.get('SECTION', 'PERSONAL_ACCESS_TOKEN')
     return access_key
 
+def get_date_in_is8601_from_text(text='Thu, 16 Dec 2010 12:14:05 +0000'):
+    import dateutil.parser as parser
+    date = parser.parse(text)
+    return date.isoformat()
 
 def main():
     access_key = get_access_key()
@@ -87,6 +108,7 @@ def main():
     print("1. You want to create set of tasks under a task")
     print("2. You want to create set of tasks under all subtasks")
     print("3. Add all subtasks of task to a project")
+    print("4. Update due date in all subtasks")
 
     option = input("Enter the input:")
 
@@ -96,6 +118,8 @@ def main():
         asanaAutomator.create_n_tasks_under_all_subtask(workspace, project)
     elif option is "3":
         asanaAutomator.add_project_to_subtask(workspace, project)
+    elif option is "4":
+        asanaAutomator.update_date_to_all_subtask(workspace, project)
 
 
 if __name__ == '__main__':
