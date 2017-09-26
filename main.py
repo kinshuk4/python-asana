@@ -75,6 +75,13 @@ class AsanaAutomator:
             self.client.tasks.update(subtask['id'], {
                 'due_at': date
             })
+    def delete_all_subtask(self, workspace, project):
+        task_id = input("Enter parent task id:")
+        all_subtask = self.client.tasks.subtasks(task_id)
+
+        for subtask in all_subtask:
+            print(subtask['id'])
+            self.client.tasks.delete(subtask['id'])
 
     def create_n_tasks_under_a_task_(self, workspace, project):
         parent_task_id, num_sub_tasks, prefix = self.prompt_parent_nsubtask_prefix()
@@ -120,7 +127,8 @@ def main():
         asanaAutomator.add_project_to_subtask(workspace, project)
     elif option is "4":
         asanaAutomator.update_date_to_all_subtask(workspace, project)
-
+    elif option is "5":
+        asanaAutomator.delete_all_subtask(workspace, project)
 
 if __name__ == '__main__':
     main()
