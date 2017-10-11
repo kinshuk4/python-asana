@@ -1,7 +1,7 @@
 import configparser
 import asana
 from six import print_
-
+import datetime
 
 def user_select_option(message, options):
     option_lst = list(options)
@@ -64,12 +64,14 @@ class AsanaAutomator:
     def update_date_to_all_subtask(self, workspace, project):
         task_id = input("Enter parent task id:")
         all_subtask = self.client.tasks.subtasks(task_id)
-        date_text = input("Enter the date(0 for removing it i.e. setting to null): ")
+        date_text = input("Enter the date(0 for removing it i.e. setting to null, 1 for today, or in iso format for any other day): ")
         if date_text is '0':
             date = None
+        elif date_text is '1':
+            date = str(datetime.date.today().strftime("%Y-%m-%dT%H:%M:%S+0000"))
         else:
             date = get_date_in_is8601_from_text(date_text)
-
+        print(date)
         for subtask in all_subtask:
             print(subtask['id'])
             self.client.tasks.update(subtask['id'], {
